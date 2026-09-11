@@ -147,7 +147,7 @@ export default function NumpadForm({ onClose, onAdded }: { onClose: () => void, 
             is_installment: true,
             installment_current: i,
             installment_total: total,
-            is_paid: type === 'income' ? true : false
+            is_paid: false
           });
         }
       } else {

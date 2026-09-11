@@ -18,6 +18,7 @@ interface Transaction {
   is_paid: boolean;
   paid_at: string | null;
   receipt_url: string | null;
+  category_id?: string;
   categories: {
     name: string;
     icon: string;
