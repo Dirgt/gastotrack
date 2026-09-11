@@ -26,36 +26,41 @@ export default function Home() {
     
     setUserName(user.email?.split('@')[0] || "Usuario");
 
-    // Check for alerts (Pending expenses from past dates)
     const today = new Date();
     today.setHours(0,0,0,0);
-    const { data: alertsData } = await supabase
-      .from('transactions')
-      .select('id, amount, description, created_at, categories(name)')
-      .eq('user_id', user.id)
-      .eq('type', 'expense')
-      .eq('is_paid', false)
-      .lt('created_at', today.toISOString());
 
-    if (alertsData) {
-      setPendingAlerts(alertsData);
+    // Ejecutar todas las peticiones a la base de datos EN PARALELO
+    const [alertsResult, contributionsResult, txsResult] = await Promise.all([
+      supabase
+        .from('transactions')
+        .select('id, amount, description, created_at, categories(name)')
+        .eq('user_id', user.id)
+        .eq('type', 'expense')
+        .eq('is_paid', false)
+        .lt('created_at', today.toISOString()),
+      
+      supabase
+        .from('goal_contributions')
+        .select('amount')
+        .eq('user_id', user.id),
+
+      supabase
+        .from('transactions')
+        .select('*, categories(name, icon, color)')
+        .eq('user_id', user.id)
+        .eq('is_paid', true)
+        .order('paid_at', { ascending: false })
+        .order('created_at', { ascending: false })
+    ]);
+
+    // Asignar los resultados
+    if (alertsResult.data) {
+      setPendingAlerts(alertsResult.data);
     }
 
-    // Fetch ALL goal contributions to deduct from global balance
-    const { data: contributionsData } = await supabase
-      .from('goal_contributions')
-      .select('amount')
-      .eq('user_id', user.id);
-    
-    const totalGoalsContributions = contributionsData?.reduce((acc, curr) => acc + curr.amount, 0) || 0;
+    const totalGoalsContributions = contributionsResult.data?.reduce((acc, curr) => acc + curr.amount, 0) || 0;
 
-    const { data, error } = await supabase
-      .from('transactions')
-      .select('*, categories(name, icon, color)')
-      .eq('user_id', user.id)
-      .eq('is_paid', true)
-      .order('paid_at', { ascending: false })
-      .order('created_at', { ascending: false });
+    const { data, error } = txsResult;
 
     if (error) {
       console.error(error);

@@ -68,22 +68,22 @@ export default function GoalsGlobalAnalytics() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Fetch all goals
-    const { data: goalsData } = await supabase
-      .from('goals')
-      .select('*')
-      .eq('user_id', user.id);
+    // Fetch goals and contributions IN PARALLEL
+    const [goalsResult, contResult] = await Promise.all([
+      supabase
+        .from('goals')
+        .select('*')
+        .eq('user_id', user.id),
+      
+      supabase
+        .from('goal_contributions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true })
+    ]);
 
-    if (goalsData) setGoals(goalsData);
-
-    // Fetch all contributions
-    const { data: contData } = await supabase
-      .from('goal_contributions')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: true });
-
-    if (contData) setContributions(contData);
+    if (goalsResult.data) setGoals(goalsResult.data);
+    if (contResult.data) setContributions(contResult.data);
     setLoading(false);
   };
 
