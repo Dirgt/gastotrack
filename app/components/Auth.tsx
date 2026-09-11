@@ -29,7 +29,7 @@ export default function Auth() {
           password,
         });
         if (error) throw error;
-        alert("Revisa tu correo para confirmar tu cuenta.");
+        // La sesión se iniciará automáticamente si la confirmación de correo está desactivada.
       }
     } catch (error: any) {
       setError(error.message || "Ocurrió un error.");
