@@ -1,0 +1,685 @@
+.container {
+  padding: 1.5rem 1.5rem 7rem;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Header */
+.header {
+  margin-bottom: 1.5rem;
+}
+
+.topBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.iconBtn {
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+/* Month Selector */
+.monthSelector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.monthBtn {
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+}
+
+.monthBtn:active {
+  transform: scale(0.92);
+}
+
+.monthText {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-color);
+  text-transform: capitalize;
+  min-width: 180px;
+  text-align: center;
+}
+
+/* Summary Cards Grid */
+.summaryGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.summaryCard {
+  background: var(--surface-color);
+  border-radius: 20px;
+  padding: 1.25rem 1rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid rgba(0,0,0,0.03);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.summaryCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+}
+
+.summaryCardIncome::before {
+  background: linear-gradient(135deg, var(--success-color), #059669);
+}
+
+.summaryCardBalance::before {
+  background: linear-gradient(90deg, #F59E0B, #D97706);
+}
+
+.summaryCardExpense::before {
+  background: linear-gradient(135deg, var(--danger-color), #E11D48);
+}
+
+.summaryLabel {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.summaryValue {
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: var(--text-color);
+  letter-spacing: -0.5px;
+}
+
+.summaryValuePositive {
+  color: var(--success-color);
+}
+
+.summaryValueNegative {
+  color: var(--danger-color);
+}
+
+/* Progress Card */
+.progressCard {
+  background: var(--surface-color);
+  border-radius: 24px;
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid rgba(0,0,0,0.03);
+  margin-bottom: 2rem;
+}
+
+.progressHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.progressTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.progressPercent {
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: var(--success-color);
+}
+
+.progressBarBg {
+  height: 14px;
+  background: var(--bg-color);
+  border-radius: 100px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border-color);
+}
+
+.progressBarFill {
+  height: 100%;
+  background: linear-gradient(135deg, var(--success-color), #059669);
+  border-radius: 100px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.progressBarFill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 100%);
+  border-radius: 100px;
+}
+
+.progressStats {
+  display: flex;
+  justify-content: space-between;
+}
+
+.progressStat {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Tabs Control */
+.tabsContainer {
+  display: flex;
+  background: var(--bg-color);
+  padding: 4px;
+  border-radius: 12px;
+  margin: 0 1.5rem 1.5rem;
+  border: 1px solid var(--border-color);
+}
+
+.tabBtn {
+  flex: 1;
+  padding: 0.75rem;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tabActive {
+  background: var(--primary-color);
+  color: white;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+}
+
+.tabContent {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.progressStatLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.progressStatValue {
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.paid {
+  color: var(--success-color);
+}
+
+.pending {
+  color: #F59E0B;
+}
+
+/* Section Header */
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.sectionIcon {
+  font-size: 1.2rem;
+}
+
+.sectionTitle {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-color);
+}
+
+.sectionCount {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: var(--bg-color);
+  padding: 0.2rem 0.6rem;
+  border-radius: 100px;
+  margin-left: auto;
+}
+
+/* Transaction List */
+.transactionList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.transactionItem {
+  background: var(--surface-color);
+  border-radius: 16px;
+  padding: 1rem 1.25rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid rgba(0,0,0,0.03);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: all 0.25s ease;
+}
+
+.transactionItemPaid {
+  opacity: 0.65;
+}
+
+/* Custom Checkbox */
+.checkbox {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 2px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  background: var(--surface-color);
+}
+
+.checkbox:active {
+  transform: scale(0.9);
+}
+
+.checkboxChecked {
+  background: var(--success-color);
+  border-color: var(--success-color);
+}
+
+.checkIcon {
+  color: white;
+}
+
+/* Income Dot */
+.incomeDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--success-color);
+  flex-shrink: 0;
+}
+
+/* Transaction Info */
+.txInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.txName {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.txDate {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.txAmount {
+  font-size: 1.05rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.txAmountExpense {
+  color: var(--danger-color);
+}
+
+.txAmountIncome {
+  color: var(--success-color);
+}
+
+.categoryGroup {
+  margin-bottom: 1.5rem;
+}
+
+.categoryHeader {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-color);
+  margin-bottom: 0.75rem;
+  padding-left: 0.5rem;
+  opacity: 0.9;
+  letter-spacing: 0.5px;
+}
+
+.editBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0.25rem;
+  transition: all 0.2s ease;
+}
+
+.editBtn:active {
+  background: var(--bg-color);
+  color: var(--text-color);
+}
+
+/* Status Badge */
+.statusBadge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 0.25rem 0.6rem;
+  border-radius: 100px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.statusPaid {
+  background: rgba(121, 163, 135, 0.15);
+  color: var(--success-color);
+}
+
+.statusPending {
+  background: rgba(232, 184, 109, 0.15);
+  color: #D97706;
+}
+
+/* Separator */
+.separator {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.separatorLine {
+  flex: 1;
+  height: 1px;
+  background: var(--border-color);
+}
+
+.separatorText {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+}
+
+/* Empty State */
+.emptyState {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-muted);
+}
+
+.emptyIcon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.emptyText {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.emptySubtext {
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-top: 0.5rem;
+  color: var(--text-muted);
+}
+
+.importBtn {
+  margin-top: 1.5rem;
+  background: linear-gradient(135deg, var(--success-color), #059669);
+  border: none;
+  padding: 1rem 1.5rem;
+  border-radius: 100px;
+  color: white;
+  font-weight: 700;
+  font-size: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 15px rgba(121, 163, 135, 0.3);
+  transition: all 0.2s ease;
+}
+
+.importBtn:active {
+  transform: scale(0.95);
+  box-shadow: 0 2px 8px rgba(121, 163, 135, 0.2);
+}
+
+.importBtn:disabled {
+  opacity: 0.7;
+  transform: none;
+}
+
+/* Loading */
+.loading {
+  text-align: center;
+  padding: 3rem 0;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.receiptBtn {
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+  margin-right: 0.5rem;
+  flex-shrink: 0;
+}
+
+.receiptBtn:active {
+  transform: scale(0.92);
+  color: var(--primary-color);
+}
+
+.receiptOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+.receiptViewer {
+  position: relative;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.receiptFullImage {
+  width: 100%;
+  height: auto;
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
+
+.receiptCloseBtn {
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 100px;
+  background: rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.4);
+  color: white;
+  font-weight: 600;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.receiptCloseBtn:active {
+  background: rgba(255,255,255,0.3);
+}
+
+@media (max-width: 380px) {
+  .summaryGrid {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  .summaryCard {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-align: left;
+  }
+  .summaryLabel {
+    margin-bottom: 0;
+  }
+}
+
+.modalCancelBtn {
+  background: var(--surface-color);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  padding: 0.8rem;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modalCancelBtn:active {
+  background: var(--bg-color);
+}
+
+.modalConfirmBtn {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 0.8rem;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modalConfirmBtn:active {
+  transform: scale(0.95);
+}
+
+/* Modal Layout */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 1rem;
+}
+
+.modalContent {
+  background: var(--surface-color);
+  width: 100%;
+  max-width: 400px;
+  border-radius: 20px;
+  padding: 1.5rem;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.modalTitle {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-color);
+}
+
+.closeBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.5rem;
+  cursor: pointer;
+}

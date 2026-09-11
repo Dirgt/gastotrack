@@ -1,0 +1,319 @@
+.mainWrapper {
+  padding-bottom: 100px;
+}
+
+.header {
+  padding: 1.5rem 0 1rem;
+}
+
+.topBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.iconBtn {
+  background: none;
+  border: none;
+  color: var(--text-color);
+  display: flex;
+  align-items: center;
+}
+
+.title {
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: var(--text-color);
+}
+
+.tabs {
+  display: flex;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.tab {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 1rem 0;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.activeTab {
+  color: var(--text-color);
+  border-bottom: 2px solid var(--primary-color);
+}
+
+.goalsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.goalCard {
+  background: var(--surface-color);
+  border-radius: 20px;
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+}
+
+.goalHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.goalIcon {
+  width: 48px;
+  height: 48px;
+  background-color: var(--bg-color);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+.goalInfo {
+  flex: 1;
+}
+
+.goalTitle {
+  font-weight: 700;
+  font-size: 1.05rem;
+  margin-bottom: 0.25rem;
+}
+
+.goalAmounts {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.current {
+  color: var(--text-color);
+  font-weight: 700;
+}
+
+.progressContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.progressBar {
+  width: 100%;
+  height: 8px;
+  background-color: var(--bg-color);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background-color: var(--primary-color);
+  border-radius: 10px;
+  transition: width 0.5s ease-out;
+}
+
+.progressLabels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 3rem 0;
+  color: var(--text-muted);
+}
+
+.demoBtn {
+  margin-top: 1rem;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 100px;
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+
+.newGoalForm {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.formContainer {
+  background: var(--surface-color);
+  border-radius: 20px;
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.inputGroup label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.input {
+  background-color: var(--bg-color);
+  border: 1px solid var(--border-color);
+  padding: 1rem;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-color);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input:focus {
+  border-color: var(--primary-color);
+}
+
+.submitBtn {
+  margin-top: 0.5rem;
+  width: 100%;
+  padding: 1rem;
+  border-radius: 100px;
+  background-color: var(--primary-color);
+  color: white;
+  font-weight: 700;
+  font-size: 1.05rem;
+  border: none;
+  box-shadow: var(--shadow-md);
+  transition: transform 0.2s ease;
+}
+
+.submitBtn:active {
+  transform: scale(0.98);
+}
+.submitBtn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.emojiPicker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.emojiInput {
+  font-size: 1.5rem;
+  text-align: center;
+  width: 80px;
+}
+
+.presetEmojis {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.presetEmojiBtn {
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  font-size: 1.25rem;
+  padding: 0.5rem;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.presetEmojiBtn:hover {
+  background: var(--bg-color);
+}
+
+.goalActions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.depositBtn {
+  flex: 1;
+  background: var(--text-color);
+  color: var(--bg-color);
+  border: none;
+  border-radius: 12px;
+  padding: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.analyticsBtn {
+  flex: 1;
+  background: transparent;
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+}
+
+.modalOverlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background: var(--surface-color);
+  width: 90%;
+  max-width: 400px;
+  border-radius: 24px;
+  padding: 1.5rem;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.2);
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.modalHeader h3 {
+  font-size: 1.2rem;
+  margin: 0;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  color: var(--text-muted);
+  cursor: pointer;
+}

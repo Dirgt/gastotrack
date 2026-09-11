@@ -1,0 +1,69 @@
+.navContainer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  z-index: 1000;
+  padding: 0 1rem 1rem;
+}
+
+.navBar {
+  background-color: var(--surface-color);
+  width: 100%;
+  max-width: 600px;
+  height: 65px;
+  border-radius: 30px;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  position: relative;
+  border: 1px solid var(--border-color);
+}
+
+.navItem {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  height: 100%;
+  padding: 0 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.navItem:hover {
+  color: var(--primary-color);
+}
+
+.navItem.active {
+  color: var(--primary-color);
+}
+
+.fabSpacer {
+  width: 60px; /* Espacio para que el FAB no tape los iconos */
+}
+
+.fab {
+  position: absolute;
+  bottom: 30px; /* Lo eleva sobre la barra */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 60px;
+  background-color: var(--primary-color);
+  border-radius: 50%;
+  border: 4px solid var(--bg-color); /* Anillo del color del fondo para separar */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 25px rgba(246, 184, 150, 0.4);
+  transition: transform 0.2s ease;
+}
+
+.fab:active {
+  transform: translateX(-50%) scale(0.95);
+}
