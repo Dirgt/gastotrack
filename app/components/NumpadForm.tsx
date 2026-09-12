@@ -85,7 +85,13 @@ export default function NumpadForm({ onClose, onAdded }: { onClose: () => void, 
 
     if (data && data.length > 0) {
       setUserCategories(data);
-      if (!selectedCategoryId) setSelectedCategoryId(data[0].id);
+      const exists = data.some(c => c.id === selectedCategoryId);
+      if (!exists) {
+        const preferred = type === 'income' 
+          ? (data.find(c => c.name === 'Salario') || data[0])
+          : data[0];
+        setSelectedCategoryId(preferred.id);
+      }
     }
   };
 
