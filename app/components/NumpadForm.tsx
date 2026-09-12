@@ -103,28 +103,6 @@ export default function NumpadForm({ onClose, onAdded }: { onClose: () => void, 
     });
   };
 
-  useEffect(() => {
-    const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      if (e.repeat) return; // Evitar que enviar pulsaciones repetidas si se deja presionada la tecla
-      // Ignorar si se está escribiendo en un input
-      if (document.activeElement?.tagName === 'INPUT') return;
-      
-      const key = e.key;
-      if (/^[0-9]$/.test(key)) {
-        handleKeyPress(key);
-      } else if (key === '.' || key === ',') {
-        handleKeyPress('.');
-      } else if (key === 'Backspace') {
-        handleKeyPress('backspace');
-      } else if (key === 'Enter') {
-        e.preventDefault(); // Evitar click en botones enfocados
-        handleSubmit();
-      }
-    };
-
-    window.addEventListener('keydown', handleGlobalKeyDown);
-    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [handleSubmit]);
 
 
 
@@ -208,6 +186,29 @@ export default function NumpadForm({ onClose, onAdded }: { onClose: () => void, 
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.repeat) return; // Evitar que enviar pulsaciones repetidas si se deja presionada la tecla
+      // Ignorar si se está escribiendo en un input
+      if (document.activeElement?.tagName === 'INPUT') return;
+      
+      const key = e.key;
+      if (/^[0-9]$/.test(key)) {
+        handleKeyPress(key);
+      } else if (key === '.' || key === ',') {
+        handleKeyPress('.');
+      } else if (key === 'Backspace') {
+        handleKeyPress('backspace');
+      } else if (key === 'Enter') {
+        e.preventDefault(); // Evitar click en botones enfocados
+        handleSubmit();
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [handleSubmit]);
 
   return (
     <div className={styles.fullscreen}>
