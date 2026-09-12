@@ -55,7 +55,9 @@ export default function NumpadForm({ onClose, onAdded }: { onClose: () => void, 
           { name: 'Educación', icon: '🎓' },
           { name: 'Salud', icon: '🏥' },
           { name: 'Entretenimiento', icon: '🍔' },
-          { name: 'Imprevistos', icon: '🔧' }
+          { name: 'Imprevistos', icon: '🔧' },
+          { name: 'Ahorro', icon: '🐷' },
+          { name: 'Inversiones', icon: '📈' }
         ].map(c => ({ ...c, user_id: user.id, type: 'expense', color: 'var(--danger-color)' }));
 
         await supabase.from('categories').insert(defaultCategories);
@@ -90,20 +92,45 @@ export default function NumpadForm({ onClose, onAdded }: { onClose: () => void, 
   }, [type]);
 
   const handleKeyPress = (key: string) => {
-    if (key === 'backspace') {
-      setAmountStr(prev => prev.length > 1 ? prev.slice(0, -1) : "0");
-    } else if (key === '.') {
-      if (!amountStr.includes('.')) {
-        setAmountStr(prev => prev + '.');
+    setAmountStr(prev => {
+      if (key === 'backspace') {
+        return prev.length > 1 ? prev.slice(0, -1) : "0";
+      } else if (key === '.') {
+        return !prev.includes('.') ? prev + '.' : prev;
+      } else {
+        return prev === "0" ? key : prev + key;
       }
-    } else {
-      setAmountStr(prev => prev === "0" ? key : prev + key);
-    }
+    });
   };
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.repeat) return; // Evitar que enviar pulsaciones repetidas si se deja presionada la tecla
+      // Ignorar si se está escribiendo en un input
+      if (document.activeElement?.tagName === 'INPUT') return;
+      
+      const key = e.key;
+      if (/^[0-9]$/.test(key)) {
+        handleKeyPress(key);
+      } else if (key === '.' || key === ',') {
+        handleKeyPress('.');
+      } else if (key === 'Backspace') {
+        handleKeyPress('backspace');
+      } else if (key === 'Enter') {
+        e.preventDefault(); // Evitar click en botones enfocados
+        handleSubmit();
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [handleSubmit]);
 
 
 
   const handleSubmit = async () => {
+    if (loading) return;
+    
     const amount = parseFloat(amountStr);
     if (amount <= 0) {
       alert("El monto debe ser mayor a 0");
@@ -131,12 +158,14 @@ export default function NumpadForm({ onClose, onAdded }: { onClose: () => void, 
           throw new Error("Cuota actual inválida.");
         }
         
-        for (let i = curr; i <= total; i++) {
+        for (let i = 1; i <= total; i++) {
           const txDate = new Date();
           txDate.setFullYear(parseInt(year), parseInt(month) - 1, parseInt(day));
-          // Avanzar los meses correspondientes
+          // Avanzar o retroceder los meses correspondientes
           txDate.setMonth(txDate.getMonth() + (i - curr));
           
+          const isAlreadyPaid = i < curr;
+
           transactionsToInsert.push({
             amount,
             type,
@@ -147,7 +176,8 @@ export default function NumpadForm({ onClose, onAdded }: { onClose: () => void, 
             is_installment: true,
             installment_current: i,
             installment_total: total,
-            is_paid: false
+            is_paid: isAlreadyPaid,
+            paid_at: isAlreadyPaid ? txDate.toISOString() : null
           });
         }
       } else {
@@ -241,16 +271,26 @@ export default function NumpadForm({ onClose, onAdded }: { onClose: () => void, 
             // PASO 1: Categorías Principales
             userCategories
               .filter(cat => !cat.parent_id)
-              .map(cat => (
-                <button 
-                  key={cat.id} 
-                  className={styles.chip}
-                  onClick={() => setSelectedParentId(cat.id)}
-                >
-                  <div className={styles.chipIcon}>{cat.icon || (type === 'income' ? '💰' : '🏷️')}</div>
-                  <span>{cat.name}</span>
-                </button>
-              ))
+              .map(cat => {
+                const hasSub = userCategories.some(c => c.parent_id === cat.id);
+                return (
+                  <button 
+                    key={cat.id} 
+                    className={`${styles.chip} ${selectedCategoryId === cat.id ? styles.chipActive : ''}`}
+                    onClick={() => {
+                      if (hasSub) {
+                        setSelectedParentId(cat.id);
+                        setSelectedCategoryId(cat.id);
+                      } else {
+                        setSelectedCategoryId(cat.id);
+                      }
+                    }}
+                  >
+                    <div className={styles.chipIcon}>{cat.icon || (type === 'income' ? '💰' : '🏷️')}</div>
+                    <span>{cat.name}</span>
+                  </button>
+                );
+              })
           ) : (
             // PASO 2: Subcategorías
             <>
