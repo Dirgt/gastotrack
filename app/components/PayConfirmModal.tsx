@@ -9,8 +9,9 @@ interface PayConfirmModalProps {
     amount: number;
     categories: { name: string; icon: string } | null;
     description: string | null;
+    due_date?: string | null;
   };
-  onConfirm: (txId: string, receiptUrl: string | null) => void;
+  onConfirm: (txId: string, receiptUrl: string | null, customPaidDate?: string) => void;
   onCancel: () => void;
 }
 
@@ -19,6 +20,7 @@ export default function PayConfirmModal({ transaction, onConfirm, onCancel }: Pa
   const [preview, setPreview] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [paymentDate, setPaymentDate] = useState(() => new Date().toISOString().split('T')[0]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -93,7 +95,7 @@ export default function PayConfirmModal({ transaction, onConfirm, onCancel }: Pa
       setUploading(false);
     }
 
-    onConfirm(transaction.id, receiptUrl);
+    onConfirm(transaction.id, receiptUrl, paymentDate);
     setConfirming(false);
   };
 
@@ -122,6 +124,27 @@ export default function PayConfirmModal({ transaction, onConfirm, onCancel }: Pa
           <span className={styles.amountValue}>
             ${transaction.amount.toLocaleString('es-CO')}
           </span>
+        </div>
+
+        {/* Payment Date Selection */}
+        <div style={{ marginTop: '0.8rem', marginBottom: '1rem', textAlign: 'left' }}>
+          <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.35rem', fontWeight: 500 }}>
+            📅 Fecha en que se realizó el pago
+          </label>
+          <input
+            type="date"
+            value={paymentDate}
+            onChange={(e) => setPaymentDate(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '0.6rem 0.8rem',
+              borderRadius: '8px',
+              border: '1px solid var(--border-color)',
+              backgroundColor: 'var(--surface-color)',
+              color: 'var(--text-color)',
+              fontSize: '0.9rem'
+            }}
+          />
         </div>
 
         {/* Receipt Upload */}

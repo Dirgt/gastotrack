@@ -12,8 +12,9 @@ interface EditTransactionModalProps {
     description: string | null;
     categories: { name: string; icon: string } | null;
     category_id?: string;
+    due_date?: string | null;
   };
-  onSave: (txId: string, newAmount: number, newDescription: string, newCategoryId?: string) => void;
+  onSave: (txId: string, newAmount: number, newDescription: string, newCategoryId?: string, newDueDate?: string) => void;
   onDelete: (txId: string) => void;
   onCancel: () => void;
 }
@@ -22,6 +23,7 @@ export default function EditTransactionModal({ transaction, onSave, onDelete, on
   const [amountStr, setAmountStr] = useState(transaction.amount.toString());
   const [description, setDescription] = useState(transaction.description || "");
   const [selectedCategoryId, setSelectedCategoryId] = useState(transaction.category_id || "");
+  const [dueDate, setDueDate] = useState(transaction.due_date || "");
   const [categories, setCategories] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -29,12 +31,9 @@ export default function EditTransactionModal({ transaction, onSave, onDelete, on
   // Fetch categories to allow changing
   useState(() => {
     const fetchCats = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
       const { data } = await supabase
         .from('categories')
         .select('id, name, parent_id, icon')
-        .eq('user_id', user.id)
         .order('name');
       if (data) setCategories(data);
     };
@@ -54,9 +53,17 @@ export default function EditTransactionModal({ transaction, onSave, onDelete, on
     }
     
     setSaving(true);
-    const updatePayload: any = { amount: newAmount, description: description };
+    const { data: { user } } = await supabase.auth.getUser();
+    const updatePayload: any = { 
+      amount: newAmount, 
+      description: description,
+      updated_by: user?.id || null
+    };
     if (selectedCategoryId) {
       updatePayload.category_id = selectedCategoryId;
+    }
+    if (dueDate) {
+      updatePayload.due_date = dueDate;
     }
 
     const { error } = await supabase
@@ -65,7 +72,7 @@ export default function EditTransactionModal({ transaction, onSave, onDelete, on
       .eq('id', transaction.id);
 
     if (!error) {
-      onSave(transaction.id, newAmount, description, selectedCategoryId);
+      onSave(transaction.id, newAmount, description, selectedCategoryId, dueDate);
     } else {
       alert("Error guardando cambios");
     }
@@ -142,6 +149,20 @@ export default function EditTransactionModal({ transaction, onSave, onDelete, on
               </optgroup>
             ))}
           </select>
+        </div>
+
+        <div style={{ marginBottom: '1.25rem' }}>
+          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>📅 Fecha que se debe pagar (Vencimiento)</label>
+          <input 
+            type="date" 
+            value={dueDate} 
+            onChange={(e) => setDueDate(e.target.value)}
+            style={{ 
+              width: '100%', padding: '1rem', borderRadius: '14px', 
+              border: '1px solid var(--border-color)', background: 'var(--bg-color)', 
+              fontSize: '1rem', color: 'var(--text-color)' 
+            }}
+          />
         </div>
 
         <div style={{ marginBottom: '2rem' }}>

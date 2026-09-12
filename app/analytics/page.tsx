@@ -35,7 +35,6 @@ export default function Analytics() {
     const { data, error } = await supabase
       .from('transactions')
       .select('amount, created_at, categories(name, icon, color)')
-      .eq('user_id', user.id)
       .eq('type', 'expense')
       .eq('is_paid', true)
       .order('created_at', { ascending: true });

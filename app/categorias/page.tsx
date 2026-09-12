@@ -33,7 +33,6 @@ export default function CategoriasPage() {
     const { data } = await supabase
       .from('categories')
       .select('id, name, icon, parent_id, type')
-      .eq('user_id', user.id)
       .eq('type', 'expense') // Enfocados en gastos
       .order('name');
     

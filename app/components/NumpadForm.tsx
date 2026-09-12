@@ -32,11 +32,10 @@ export default function NumpadForm({ onClose, onAdded }: { onClose: () => void, 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Traer categorías
+    // Traer categorías compartidas
     let { data } = await supabase
       .from('categories')
       .select('id, name, icon, parent_id')
-      .eq('user_id', user.id)
       .eq('type', type)
       .order('name');
     
@@ -57,7 +56,9 @@ export default function NumpadForm({ onClose, onAdded }: { onClose: () => void, 
           { name: 'Entretenimiento', icon: '🍔' },
           { name: 'Imprevistos', icon: '🔧' },
           { name: 'Ahorro', icon: '🐷' },
-          { name: 'Inversiones', icon: '📈' }
+          { name: 'Inversiones', icon: '📈' },
+          { name: 'Préstamos', icon: '🤝' },
+          { name: 'Otros', icon: '📦' }
         ].map(c => ({ ...c, user_id: user.id, type: 'expense', color: 'var(--danger-color)' }));
 
         await supabase.from('categories').insert(defaultCategories);
@@ -65,6 +66,7 @@ export default function NumpadForm({ onClose, onAdded }: { onClose: () => void, 
         const defaultIncomeCategories = [
           { name: 'Salario', icon: '💼' },
           { name: 'Negocio', icon: '🏢' },
+          { name: 'Préstamos', icon: '🤝' },
           { name: 'Otros', icon: '💰' }
         ].map(c => ({ ...c, user_id: user.id, type: 'income', color: 'var(--success-color)' }));
 
@@ -75,7 +77,6 @@ export default function NumpadForm({ onClose, onAdded }: { onClose: () => void, 
       const { data: newData } = await supabase
         .from('categories')
         .select('id, name, icon, parent_id')
-        .eq('user_id', user.id)
         .eq('type', type)
         .order('name');
       data = newData;
@@ -128,6 +129,8 @@ export default function NumpadForm({ onClose, onAdded }: { onClose: () => void, 
       
       const transactionsToInsert = [];
       
+      const nowIso = new Date().toISOString();
+
       if (type === 'expense' && isInstallment) {
         const curr = parseInt(installmentCurrent);
         const total = parseInt(installmentTotal);
@@ -137,10 +140,11 @@ export default function NumpadForm({ onClose, onAdded }: { onClose: () => void, 
         }
         
         for (let i = 1; i <= total; i++) {
-          const txDate = new Date();
-          txDate.setFullYear(parseInt(year), parseInt(month) - 1, parseInt(day));
-          // Avanzar o retroceder los meses correspondientes
-          txDate.setMonth(txDate.getMonth() + (i - curr));
+          const dueDateObj = new Date(parseInt(year), parseInt(month) - 1 + (i - curr), parseInt(day));
+          const dueYear = dueDateObj.getFullYear();
+          const dueMonth = String(dueDateObj.getMonth() + 1).padStart(2, '0');
+          const dueDay = String(dueDateObj.getDate()).padStart(2, '0');
+          const dueDateStr = `${dueYear}-${dueMonth}-${dueDay}`;
           
           const isAlreadyPaid = i < curr;
 
@@ -150,26 +154,30 @@ export default function NumpadForm({ onClose, onAdded }: { onClose: () => void, 
             description: null,
             category_id: selectedCategoryId,
             user_id: user.id,
-            created_at: txDate.toISOString(),
+            created_by: user.id,
+            created_at: nowIso,
+            due_date: dueDateStr,
             is_installment: true,
             installment_current: i,
             installment_total: total,
             is_paid: isAlreadyPaid,
-            paid_at: isAlreadyPaid ? txDate.toISOString() : null
+            paid_at: isAlreadyPaid ? dueDateObj.toISOString() : null,
+            paid_by: isAlreadyPaid ? user.id : null
           });
         }
       } else {
-        const currentDate = new Date();
-        currentDate.setFullYear(parseInt(year), parseInt(month) - 1, parseInt(day));
-        
         transactionsToInsert.push({
           amount,
           type,
           description: null,
           category_id: selectedCategoryId,
           user_id: user.id,
-          created_at: currentDate.toISOString(),
-          is_paid: type === 'income' ? true : false
+          created_by: user.id,
+          created_at: nowIso,
+          due_date: date,
+          is_paid: type === 'income' ? true : false,
+          paid_at: type === 'income' ? nowIso : null,
+          paid_by: type === 'income' ? user.id : null
         });
       }
 
@@ -347,6 +355,18 @@ export default function NumpadForm({ onClose, onAdded }: { onClose: () => void, 
       </div>
 
       <div className={styles.footer}>
+        <div style={{ width: '100%', marginBottom: '1rem', background: 'var(--surface-color)', padding: '0.8rem 1rem', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+          <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.35rem', fontWeight: 600 }}>
+            📅 {type === 'expense' ? 'Fecha que se debe pagar (Vencimiento)' : 'Fecha del ingreso'}
+          </label>
+          <input 
+            type="date" 
+            value={date} 
+            onChange={(e) => setDate(e.target.value)} 
+            style={{ width: '100%', padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '0.95rem', background: 'var(--bg-color)', color: 'var(--text-color)' }}
+          />
+        </div>
+
         {type === 'expense' && (
           <div style={{ width: '100%', marginBottom: '1rem', background: 'var(--surface-color)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
             <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-color)', cursor: 'pointer' }}>

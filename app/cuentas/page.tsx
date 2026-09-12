@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import Link from "next/link";
 import { supabase } from "../../lib/supabase";
+import { getUserName, getUserBadgeColor } from "../../lib/couple";
 import styles from "./page.module.css";
 import { ChevronLeft, ChevronRight, Check, ImageIcon, Edit2, Copy, Loader2 } from "lucide-react";
 import PayConfirmModal from "../components/PayConfirmModal";
@@ -15,10 +16,15 @@ interface Transaction {
   type: "income" | "expense";
   description: string | null;
   created_at: string;
+  due_date?: string | null;
   is_paid: boolean;
   paid_at: string | null;
   receipt_url: string | null;
   category_id?: string;
+  user_id?: string;
+  created_by?: string | null;
+  updated_by?: string | null;
+  paid_by?: string | null;
   categories: {
     name: string;
     icon: string;
@@ -66,15 +72,18 @@ export default function CuentasPage() {
     if (!user) return;
 
     const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-    const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0, 23, 59, 59);
+    const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+
+    const startStr = `${startOfMonth.getFullYear()}-${String(startOfMonth.getMonth() + 1).padStart(2, '0')}-01`;
+    const endStr = `${endOfMonth.getFullYear()}-${String(endOfMonth.getMonth() + 1).padStart(2, '0')}-${String(endOfMonth.getDate()).padStart(2, '0')}`;
 
     const { data, error } = await supabase
       .from('transactions')
-      .select('id, amount, type, description, created_at, is_paid, paid_at, receipt_url, is_installment, installment_current, installment_total, categories(name, icon, parent:parent_id(name, icon))')
-      .eq('user_id', user.id)
-      .gte('created_at', startOfMonth.toISOString())
-      .lte('created_at', endOfMonth.toISOString())
-      .order('created_at', { ascending: false });
+      .select('id, amount, type, description, created_at, due_date, is_paid, paid_at, receipt_url, is_installment, installment_current, installment_total, user_id, created_by, updated_by, paid_by, categories(name, icon, parent:parent_id(name, icon))')
+      .gte('due_date', startStr)
+      .lte('due_date', endStr)
+      .order('due_date', { ascending: true })
+      .order('created_at', { ascending: true });
 
     // Si hubo otra petición después de esta, ignoramos los datos
     if (fetchIdRef.current !== currentFetchId) {
@@ -101,12 +110,15 @@ export default function CuentasPage() {
     return () => window.removeEventListener("transaction_added", handler);
   }, [currentMonth]);
 
-  // Confirm payment with optional receipt
-  const handleConfirmPay = async (txId: string, receiptUrl: string | null) => {
+  // Confirm payment with optional receipt and custom payment date
+  const handleConfirmPay = async (txId: string, receiptUrl: string | null, customPaidDate?: string) => {
     setUpdatingId(txId);
+    const { data: { user } } = await supabase.auth.getUser();
+    const paidAtStr = customPaidDate ? new Date(`${customPaidDate}T12:00:00`).toISOString() : new Date().toISOString();
     const updateData: any = { 
       is_paid: true, 
-      paid_at: new Date().toISOString() 
+      paid_at: paidAtStr,
+      paid_by: user?.id || null
     };
     if (receiptUrl) updateData.receipt_url = receiptUrl;
 
@@ -117,7 +129,7 @@ export default function CuentasPage() {
 
     if (!error) {
       setTransactions(prev => prev.map(t => 
-        t.id === txId ? { ...t, is_paid: true, paid_at: new Date().toISOString(), receipt_url: receiptUrl || t.receipt_url } : t
+        t.id === txId ? { ...t, ...updateData, receipt_url: receiptUrl || t.receipt_url } : t
       ));
     }
     setPayModalTx(null);
@@ -129,21 +141,21 @@ export default function CuentasPage() {
     setUpdatingId(txId);
     const { error } = await supabase
       .from('transactions')
-      .update({ is_paid: false, paid_at: null })
+      .update({ is_paid: false, paid_at: null, paid_by: null })
       .eq('id', txId);
 
     if (!error) {
       setTransactions(prev => prev.map(t => 
-        t.id === txId ? { ...t, is_paid: false, paid_at: null } : t
+        t.id === txId ? { ...t, is_paid: false, paid_at: null, paid_by: null } : t
       ));
     }
     setUndoModalTx(null);
     setUpdatingId(null);
   };
 
-  const handleEditSave = (txId: string, newAmount: number, newDescription: string, newCategoryId?: string) => {
-    // Si cambió la categoría, es mejor recargar de la base de datos para obtener los nombres/iconos/padres actualizados
-    if (newCategoryId) {
+  const handleEditSave = (txId: string, newAmount: number, newDescription: string, newCategoryId?: string, newDueDate?: string) => {
+    // Si cambió la categoría o la fecha de vencimiento (que podría moverlo a otro mes), recargamos
+    if (newCategoryId || newDueDate) {
       fetchTransactions();
     } else {
       setTransactions(prev => prev.map(t => 
@@ -169,16 +181,17 @@ export default function CuentasPage() {
     if (!user) return;
 
     const prevMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
-    const endOfPrevMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 0, 23, 59, 59);
+    const endOfPrevMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 0);
+    const prevStartStr = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, '0')}-01`;
+    const prevEndStr = `${endOfPrevMonth.getFullYear()}-${String(endOfPrevMonth.getMonth() + 1).padStart(2, '0')}-${String(endOfPrevMonth.getDate()).padStart(2, '0')}`;
 
-    // Buscar gastos del mes anterior
+    // Buscar gastos del mes anterior por due_date
     const { data: oldTxs, error: fetchErr } = await supabase
       .from('transactions')
-      .select('amount, type, description, category_id, is_installment')
-      .eq('user_id', user.id)
+      .select('amount, type, description, category_id, is_installment, due_date')
       .eq('type', 'expense')
-      .gte('created_at', prevMonth.toISOString())
-      .lte('created_at', endOfPrevMonth.toISOString());
+      .gte('due_date', prevStartStr)
+      .lte('due_date', prevEndStr);
 
     if (fetchErr || !oldTxs || oldTxs.length === 0) {
       setAlertMessage("No se encontraron gastos en el mes anterior.");
@@ -213,20 +226,33 @@ export default function CuentasPage() {
       return;
     }
 
-    // Insertarlos en el mes actual como pendientes
-    const targetDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 5); // 5th of current month default
-    
-    const newTxs = uniqueTxsToImport.map(t => ({
-      amount: t.amount,
-      type: t.type,
-      description: t.description,
-      category_id: t.category_id,
-      user_id: user.id,
-      created_at: targetDate.toISOString(),
-      is_paid: false,
-      paid_at: null,
-      receipt_url: null
-    }));
+    // Insertarlos en el mes actual como pendientes, conservando el día de vencimiento pactado
+    const nowIso = new Date().toISOString();
+    const newTxs = uniqueTxsToImport.map(t => {
+      let day = 5;
+      if (t.due_date) {
+        const parts = t.due_date.split('-');
+        if (parts.length === 3) {
+          day = parseInt(parts[2], 10) || 5;
+        }
+      }
+      const targetDueDate = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+      return {
+        amount: t.amount,
+        type: t.type,
+        description: t.description,
+        category_id: t.category_id,
+        user_id: user.id,
+        created_by: user.id,
+        created_at: nowIso,
+        due_date: targetDueDate,
+        is_paid: false,
+        paid_at: null,
+        paid_by: null,
+        receipt_url: null
+      };
+    });
 
     const { error: insertErr } = await supabase
       .from('transactions')
@@ -248,11 +274,23 @@ export default function CuentasPage() {
   const totalExpense = useMemo(() => expenses.reduce((sum, t) => sum + t.amount, 0), [expenses]);
   const balance = totalIncome - totalExpense;
   
-  const pendingExpenses = useMemo(() => expenses.filter(t => !t.is_paid).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()), [expenses]);
-  const paidExpenses = useMemo(() => expenses.filter(t => t.is_paid).sort((a, b) => {
-    if (!a.paid_at || !b.paid_at) return 0;
-    return new Date(b.paid_at).getTime() - new Date(a.paid_at).getTime();
-  }), [expenses]);
+  const pendingExpenses = useMemo(() => 
+    expenses
+      .filter(t => !t.is_paid)
+      .sort((a, b) => new Date(a.due_date || a.created_at).getTime() - new Date(b.due_date || b.created_at).getTime()), 
+    [expenses]
+  );
+  
+  const paidExpenses = useMemo(() => 
+    expenses
+      .filter(t => t.is_paid)
+      .sort((a, b) => {
+        const timeA = new Date(a.paid_at || a.created_at).getTime();
+        const timeB = new Date(b.paid_at || b.created_at).getTime();
+        return timeB - timeA;
+      }), 
+    [expenses]
+  );
 
   const groupByCategory = (txs: Transaction[]) => {
     return txs.reduce((acc, tx) => {
@@ -274,9 +312,18 @@ export default function CuentasPage() {
   const totalPending = useMemo(() => pendingExpenses.reduce((sum, t) => sum + t.amount, 0), [pendingExpenses]);
   const paidPercent = totalExpense > 0 ? Math.round((totalPaid / totalExpense) * 100) : 0;
 
-  const formatDate = (dateStr: string) => {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
+  const formatDate = (dateStr: string | null | undefined) => {
+    if (!dateStr) return '';
+    if (dateStr.includes('T')) {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
+    }
+    const [y, m, d] = dateStr.split('-');
+    if (y && m && d) {
+      const dateObj = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+      return dateObj.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
+    }
+    return dateStr;
   };
 
   return (
@@ -442,7 +489,30 @@ export default function CuentasPage() {
                               {tx.is_installment && <span style={{ fontSize: '0.75rem', marginLeft: '0.5rem', background: 'var(--border-color)', padding: '0.1rem 0.4rem', borderRadius: '4px', color: 'var(--text-muted)' }}>(Cuota {tx.installment_current}/{tx.installment_total})</span>}
                             </div>
                             {tx.description && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{tx.description}</div>}
-                            <div className={styles.txDate}>{formatDate(tx.created_at)}</div>
+                            <div className={styles.txDate}>
+                              <span style={{ fontWeight: 700, color: '#f59e0b' }}>
+                                📅 Vence: {formatDate(tx.due_date || tx.created_at)}
+                              </span>
+                              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: '0.4rem' }}>
+                                · Creado {formatDate(tx.created_at)}
+                              </span>
+                              <span style={{
+                                fontSize: '0.7rem',
+                                fontWeight: 600,
+                                marginLeft: '0.4rem',
+                                padding: '0.1rem 0.35rem',
+                                borderRadius: '4px',
+                                backgroundColor: getUserBadgeColor(tx.created_by || tx.user_id).bg,
+                                color: getUserBadgeColor(tx.created_by || tx.user_id).text
+                              }}>
+                                👤 {getUserName(tx.created_by || tx.user_id)}
+                              </span>
+                              {tx.updated_by && (
+                                <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginLeft: '0.3rem' }}>
+                                  (editado por {getUserName(tx.updated_by)})
+                                </span>
+                              )}
+                            </div>
                           </div>
                           <span className={`${styles.txAmount} ${styles.txAmountExpense}`}>
                             ${tx.amount.toLocaleString('es-CO')}
@@ -488,7 +558,47 @@ export default function CuentasPage() {
                               {tx.is_installment && <span style={{ fontSize: '0.75rem', marginLeft: '0.5rem', background: 'var(--border-color)', padding: '0.1rem 0.4rem', borderRadius: '4px', color: 'var(--text-muted)' }}>(Cuota {tx.installment_current}/{tx.installment_total})</span>}
                             </div>
                             {tx.description && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{tx.description}</div>}
-                            <div className={styles.txDate}>Pagado {formatDate(tx.paid_at || tx.created_at)}</div>
+                            <div className={styles.txDate}>
+                              <span style={{ fontWeight: 700, color: 'var(--success-color)' }}>
+                                ✓ Pagado: {formatDate(tx.paid_at || tx.created_at)}
+                              </span>
+                              {tx.paid_by ? (
+                                <span style={{
+                                  fontSize: '0.7rem',
+                                  fontWeight: 600,
+                                  marginLeft: '0.4rem',
+                                  padding: '0.1rem 0.35rem',
+                                  borderRadius: '4px',
+                                  backgroundColor: getUserBadgeColor(tx.paid_by).bg,
+                                  color: getUserBadgeColor(tx.paid_by).text
+                                }}>
+                                  ✓ Pagó {getUserName(tx.paid_by)}
+                                </span>
+                              ) : (
+                                <span style={{
+                                  fontSize: '0.7rem',
+                                  fontWeight: 600,
+                                  marginLeft: '0.4rem',
+                                  padding: '0.1rem 0.35rem',
+                                  borderRadius: '4px',
+                                  backgroundColor: getUserBadgeColor(tx.created_by || tx.user_id).bg,
+                                  color: getUserBadgeColor(tx.created_by || tx.user_id).text
+                                }}>
+                                  👤 {getUserName(tx.created_by || tx.user_id)}
+                                </span>
+                              )}
+                              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: '0.4rem' }}>
+                                · Vencía {formatDate(tx.due_date || tx.created_at)}
+                              </span>
+                              <span style={{
+                                fontSize: '0.7rem',
+                                fontWeight: 500,
+                                marginLeft: '0.3rem',
+                                color: 'var(--text-muted)'
+                              }}>
+                                (creado {formatDate(tx.created_at)})
+                              </span>
+                            </div>
                           </div>
                           
                           {tx.receipt_url && (
@@ -534,7 +644,20 @@ export default function CuentasPage() {
                           )}
                           {tx.categories?.name || tx.description || 'Ingreso'}
                         </div>
-                        <div className={styles.txDate}>{formatDate(tx.created_at)}</div>
+                        <div className={styles.txDate}>
+                          <span>📅 {formatDate(tx.due_date || tx.created_at)}</span>
+                          <span style={{
+                            fontSize: '0.7rem',
+                            fontWeight: 600,
+                            marginLeft: '0.4rem',
+                            padding: '0.1rem 0.35rem',
+                            borderRadius: '4px',
+                            backgroundColor: getUserBadgeColor(tx.created_by || tx.user_id).bg,
+                            color: getUserBadgeColor(tx.created_by || tx.user_id).text
+                          }}>
+                            👤 {getUserName(tx.created_by || tx.user_id)}
+                          </span>
+                        </div>
                       </div>
                       <span className={`${styles.txAmount} ${styles.txAmountIncome}`}>
                         +${tx.amount.toLocaleString('es-CO')}

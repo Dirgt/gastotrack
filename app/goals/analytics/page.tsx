@@ -72,13 +72,11 @@ export default function GoalsGlobalAnalytics() {
     const [goalsResult, contResult] = await Promise.all([
       supabase
         .from('goals')
-        .select('*')
-        .eq('user_id', user.id),
+        .select('*'),
       
       supabase
         .from('goal_contributions')
         .select('*')
-        .eq('user_id', user.id)
         .order('created_at', { ascending: true })
     ]);
 

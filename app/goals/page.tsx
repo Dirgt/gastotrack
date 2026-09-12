@@ -43,7 +43,6 @@ export default function Goals() {
     const { data, error } = await supabase
       .from('goals')
       .select('*')
-      .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
     if (error) {

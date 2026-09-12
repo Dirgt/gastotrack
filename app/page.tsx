@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "../lib/supabase";
+import { getUserName, getUserBadgeColor } from "../lib/couple";
 import styles from "./page.module.css";
 import { UserCircle2, Bell, EyeOff, Plus, Target, History, PieChart } from "lucide-react";
 
@@ -24,30 +25,28 @@ export default function Home() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     
-    setUserName(user.email?.split('@')[0] || "Usuario");
+    setUserName(getUserName(user.id) !== 'Usuario' ? getUserName(user.id) : (user.email?.split('@')[0] || "Usuario"));
 
     const today = new Date();
     today.setHours(0,0,0,0);
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-    // Ejecutar todas las peticiones a la base de datos EN PARALELO
+    // Ejecutar todas las peticiones a la base de datos EN PARALELO (Presupuesto Compartido de Pareja)
     const [alertsResult, contributionsResult, txsResult] = await Promise.all([
       supabase
         .from('transactions')
-        .select('id, amount, description, created_at, categories(name)')
-        .eq('user_id', user.id)
+        .select('id, amount, description, created_at, due_date, categories(name)')
         .eq('type', 'expense')
         .eq('is_paid', false)
-        .lt('created_at', today.toISOString()),
+        .lt('due_date', todayStr),
       
       supabase
         .from('goal_contributions')
-        .select('amount')
-        .eq('user_id', user.id),
+        .select('amount'),
 
       supabase
         .from('transactions')
         .select('*, categories(name, icon, color)')
-        .eq('user_id', user.id)
         .order('created_at', { ascending: false })
     ]);
 
@@ -134,6 +133,20 @@ export default function Home() {
     return () => window.removeEventListener("transaction_added", handleRefresh);
   }, []);
 
+  const formatDate = (dateStr: string | null | undefined) => {
+    if (!dateStr) return '';
+    if (dateStr.includes('T')) {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
+    }
+    const [y, m, d] = dateStr.split('-');
+    if (y && m && d) {
+      const dateObj = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+      return dateObj.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
+    }
+    return dateStr;
+  };
+
   return (
     <main className={`container ${styles.mainWrapper}`}>
       <header className={styles.header}>
@@ -167,7 +180,7 @@ export default function Home() {
                           <span className={styles.notifDotBg}></span>
                           <div>
                             <p className={styles.notifText}>Pago atrasado: <strong>{alert.categories?.name}</strong></p>
-                            <p className={styles.notifDate}>Venció el {new Date(alert.created_at).toLocaleDateString('es-CO')}</p>
+                            <p className={styles.notifDate}>Venció el {formatDate(alert.due_date || alert.created_at)}</p>
                           </div>
                         </li>
                       ))}
@@ -306,8 +319,24 @@ export default function Home() {
                       <p className={styles.transactionCategory}>
                         {t.categories?.name || 'General'}
                         {t.is_installment && <span style={{ fontSize: '0.75rem', marginLeft: '0.5rem', background: 'var(--border-color)', padding: '0.1rem 0.4rem', borderRadius: '4px', color: 'var(--text-muted)' }}>(Cuota {t.installment_current}/{t.installment_total})</span>}
+                        <span style={{ 
+                          fontSize: '0.7rem', 
+                          fontWeight: 600, 
+                          marginLeft: '0.4rem', 
+                          padding: '0.1rem 0.35rem', 
+                          borderRadius: '4px', 
+                          backgroundColor: getUserBadgeColor(t.created_by || t.user_id).bg, 
+                          color: getUserBadgeColor(t.created_by || t.user_id).text 
+                        }}>
+                          👤 {getUserName(t.created_by || t.user_id)}
+                        </span>
                       </p>
                       {t.description && <p className={styles.transactionDesc}>{t.description}</p>}
+                      <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                        {t.is_paid 
+                          ? `✓ Pagado ${formatDate(t.paid_at || t.created_at)}`
+                          : `📅 Vence: ${formatDate(t.due_date || t.created_at)}`}
+                      </p>
                     </div>
                   </div>
                   <div className={styles.transactionAmount} style={{ color: t.type === 'income' ? 'var(--success-color)' : 'var(--text-color)' }}>

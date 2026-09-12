@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
+import { getUserName, getUserBadgeColor } from "../../lib/couple";
 import styles from "./page.module.css";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
@@ -11,6 +12,11 @@ interface Transaction {
   amount: number;
   type: 'income' | 'expense';
   created_at: string;
+  due_date?: string | null;
+  paid_at?: string | null;
+  user_id?: string;
+  created_by?: string | null;
+  paid_by?: string | null;
   categories: {
     name: string;
     icon?: string;
@@ -32,7 +38,6 @@ export default function TransactionsPage() {
     const { data, error } = await supabase
       .from('transactions')
       .select('*, categories(name, icon, color)')
-      .eq('user_id', user.id)
       .eq('is_paid', true)
       .order('paid_at', { ascending: false })
       .order('created_at', { ascending: false });
@@ -79,7 +84,33 @@ export default function TransactionsPage() {
                     {t.categories?.name || 'General'}
                     {t.is_installment && <span style={{ fontSize: '0.75rem', marginLeft: '0.5rem', background: 'var(--border-color)', padding: '0.1rem 0.4rem', borderRadius: '4px', color: 'var(--text-muted)' }}>(Cuota {t.installment_current}/{t.installment_total})</span>}
                   </p>
-                  <p className={styles.transactionDate}>{new Date(t.created_at).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' })}</p>
+                  <p className={styles.transactionDate}>
+                    ✓ Pagado {new Date(t.paid_at || t.created_at).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' })}
+                    {t.paid_by && (
+                      <span style={{
+                        fontSize: '0.7rem',
+                        fontWeight: 600,
+                        marginLeft: '0.3rem',
+                        padding: '0.1rem 0.35rem',
+                        borderRadius: '4px',
+                        backgroundColor: getUserBadgeColor(t.paid_by).bg,
+                        color: getUserBadgeColor(t.paid_by).text
+                      }}>
+                        ✓ Pagó {getUserName(t.paid_by)}
+                      </span>
+                    )}
+                    <span style={{
+                      fontSize: '0.7rem',
+                      fontWeight: 600,
+                      marginLeft: '0.4rem',
+                      padding: '0.1rem 0.35rem',
+                      borderRadius: '4px',
+                      backgroundColor: getUserBadgeColor(t.created_by || t.user_id).bg,
+                      color: getUserBadgeColor(t.created_by || t.user_id).text
+                    }}>
+                      👤 {getUserName(t.created_by || t.user_id)}
+                    </span>
+                  </p>
                 </div>
               </div>
               <div className={styles.transactionAmount} style={{ color: t.type === 'income' ? 'var(--success-color)' : 'var(--text-color)' }}>

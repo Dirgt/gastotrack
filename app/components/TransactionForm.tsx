@@ -27,7 +27,6 @@ export default function TransactionForm({ onClose, onAdded }: { onClose: () => v
       const { data } = await supabase
         .from('categories')
         .select('id, name')
-        .eq('user_id', user.id)
         .eq('type', type);
       if (data) {
         setUserCategories(data);
@@ -76,7 +75,12 @@ export default function TransactionForm({ onClose, onAdded }: { onClose: () => v
           description,
           category_id: finalCategoryId,
           user_id: user.id,
-          created_at: currentDate.toISOString()
+          created_by: user.id,
+          created_at: new Date().toISOString(),
+          due_date: date,
+          is_paid: type === 'income' ? true : false,
+          paid_at: type === 'income' ? new Date().toISOString() : null,
+          paid_by: type === 'income' ? user.id : null
         });
 
       if (insertError) throw insertError;
@@ -117,7 +121,7 @@ export default function TransactionForm({ onClose, onAdded }: { onClose: () => v
 
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.inputGroup}>
-            <label>Fecha</label>
+            <label>📅 {type === 'expense' ? 'Fecha que se debe pagar (Vencimiento)' : 'Fecha del ingreso'}</label>
             <input 
               type="date" 
               required 
