@@ -27,6 +27,7 @@ export default function NumpadForm({ onClose, onAdded }: { onClose: () => void, 
   const [isInstallment, setIsInstallment] = useState(false);
   const [installmentCurrent, setInstallmentCurrent] = useState("1");
   const [installmentTotal, setInstallmentTotal] = useState("12");
+  const [isPaid, setIsPaid] = useState(true);
 
   const fetchCategories = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -175,9 +176,9 @@ export default function NumpadForm({ onClose, onAdded }: { onClose: () => void, 
           created_by: user.id,
           created_at: nowIso,
           due_date: date,
-          is_paid: type === 'income' ? true : false,
-          paid_at: type === 'income' ? nowIso : null,
-          paid_by: type === 'income' ? user.id : null
+          is_paid: type === 'income' ? true : isPaid,
+          paid_at: (type === 'income' || isPaid) ? nowIso : null,
+          paid_by: (type === 'income' || isPaid) ? user.id : null
         });
       }
 
@@ -401,6 +402,25 @@ export default function NumpadForm({ onClose, onAdded }: { onClose: () => void, 
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {type === 'expense' && !isInstallment && (
+          <div style={{ width: '100%', marginBottom: '1rem', background: 'var(--surface-color)', padding: '0.8rem 1rem', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-color)', cursor: 'pointer' }}>
+              <span>✓ Marcar como pagado de una vez</span>
+              <input 
+                type="checkbox" 
+                checked={isPaid} 
+                onChange={(e) => setIsPaid(e.target.checked)}
+                style={{ width: '20px', height: '20px', accentColor: 'var(--success-color)' }}
+              />
+            </label>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginTop: '0.25rem' }}>
+              {isPaid 
+                ? "Se descontará del balance y aparecerá en movimientos recientes." 
+                : "Quedará como factura pendiente por pagar en la sección Cuentas."}
+            </span>
           </div>
         )}
         

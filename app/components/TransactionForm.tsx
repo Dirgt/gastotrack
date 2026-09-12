@@ -19,6 +19,7 @@ export default function TransactionForm({ onClose, onAdded }: { onClose: () => v
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
   const [isNewCategory, setIsNewCategory] = useState(false);
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [isPaid, setIsPaid] = useState(true);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -78,9 +79,9 @@ export default function TransactionForm({ onClose, onAdded }: { onClose: () => v
           created_by: user.id,
           created_at: new Date().toISOString(),
           due_date: date,
-          is_paid: type === 'income' ? true : false,
-          paid_at: type === 'income' ? new Date().toISOString() : null,
-          paid_by: type === 'income' ? user.id : null
+          is_paid: type === 'income' ? true : isPaid,
+          paid_at: (type === 'income' || isPaid) ? new Date().toISOString() : null,
+          paid_by: (type === 'income' || isPaid) ? user.id : null
         });
 
       if (insertError) throw insertError;
@@ -204,6 +205,25 @@ export default function TransactionForm({ onClose, onAdded }: { onClose: () => v
               className={styles.input}
             />
           </div>
+
+          {type === 'expense' && (
+            <div style={{ marginBottom: '1.2rem', background: 'var(--surface-color)', padding: '0.8rem 1rem', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-color)', cursor: 'pointer' }}>
+                <span>✓ Marcar como pagado de una vez</span>
+                <input 
+                  type="checkbox" 
+                  checked={isPaid} 
+                  onChange={(e) => setIsPaid(e.target.checked)}
+                  style={{ width: '20px', height: '20px', accentColor: 'var(--success-color)' }}
+                />
+              </label>
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginTop: '0.25rem' }}>
+                {isPaid 
+                  ? "Se descontará del balance y aparecerá en movimientos recientes." 
+                  : "Quedará como factura pendiente por pagar en la sección Cuentas."}
+              </span>
+            </div>
+          )}
 
           <button type="submit" disabled={loading} className={styles.submitBtn}>
             {loading ? "Guardando..." : "Guardar Movimiento"}

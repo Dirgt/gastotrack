@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { supabase } from "../lib/supabase";
 import { getUserName, getUserBadgeColor } from "../lib/couple";
@@ -146,6 +146,17 @@ export default function Home() {
     }
     return dateStr;
   };
+
+  const recentMovements = useMemo(() => {
+    return transactions
+      .filter(t => t.is_paid) // Solo movimientos reales (pagados o ingresos efectivos)
+      .sort((a, b) => {
+        const timeA = new Date(a.paid_at || a.created_at).getTime();
+        const timeB = new Date(b.paid_at || b.created_at).getTime();
+        return timeB - timeA;
+      })
+      .slice(0, 8);
+  }, [transactions]);
 
   return (
     <main className={`container ${styles.mainWrapper}`}>
@@ -305,11 +316,11 @@ export default function Home() {
         <div className={styles.listContainer}>
           {loadingData ? (
             <p className={styles.emptyState}>Cargando...</p>
-          ) : transactions.length === 0 ? (
-            <p className={styles.emptyState}>No hay movimientos aún. ¡Registra el primero!</p>
+          ) : recentMovements.length === 0 ? (
+            <p className={styles.emptyState}>No hay movimientos reales aún. ¡Registra o paga el primero!</p>
           ) : (
             <ul className={styles.transactionList}>
-              {transactions.slice(0, 8).map(t => (
+              {recentMovements.map(t => (
                 <li key={t.id} className={styles.transactionItem}>
                   <div className={styles.transactionLeft}>
                     <div className={styles.iconCircle} style={{ background: t.type === 'income' ? 'rgba(121, 163, 135, 0.2)' : 'rgba(226, 123, 123, 0.2)', color: t.type === 'income' ? 'var(--success-color)' : 'var(--danger-color)' }}>
@@ -325,17 +336,17 @@ export default function Home() {
                           marginLeft: '0.4rem', 
                           padding: '0.1rem 0.35rem', 
                           borderRadius: '4px', 
-                          backgroundColor: getUserBadgeColor(t.created_by || t.user_id).bg, 
-                          color: getUserBadgeColor(t.created_by || t.user_id).text 
+                          backgroundColor: getUserBadgeColor(t.paid_by || t.created_by || t.user_id).bg, 
+                          color: getUserBadgeColor(t.paid_by || t.created_by || t.user_id).text 
                         }}>
-                          👤 {getUserName(t.created_by || t.user_id)}
+                          👤 {getUserName(t.paid_by || t.created_by || t.user_id)}
                         </span>
                       </p>
                       {t.description && <p className={styles.transactionDesc}>{t.description}</p>}
                       <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                        {t.is_paid 
-                          ? `✓ Pagado ${formatDate(t.paid_at || t.created_at)}`
-                          : `📅 Vence: ${formatDate(t.due_date || t.created_at)}`}
+                        {t.type === 'income' 
+                          ? `📅 Recibido ${formatDate(t.paid_at || t.created_at)}` 
+                          : `✓ Pagado ${formatDate(t.paid_at || t.created_at)}`}
                       </p>
                     </div>
                   </div>
