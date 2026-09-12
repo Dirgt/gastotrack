@@ -48,8 +48,6 @@ export default function Home() {
         .from('transactions')
         .select('*, categories(name, icon, color)')
         .eq('user_id', user.id)
-        .eq('is_paid', true)
-        .order('paid_at', { ascending: false })
         .order('created_at', { ascending: false })
     ]);
 
@@ -76,15 +74,17 @@ export default function Home() {
       const currentYear = new Date().getFullYear();
 
       data.forEach(curr => {
-        // Global calculations
-        if (curr.type === 'income') allTimeInc += curr.amount;
-        else allTimeExp += curr.amount;
-        
-        // Monthly calculations
-        const txDate = new Date(curr.paid_at || curr.created_at);
-        if (txDate.getMonth() === currentMonth && txDate.getFullYear() === currentYear) {
-          if (curr.type === 'income') currentMonthInc += curr.amount;
-          else currentMonthExp += curr.amount;
+        // Global calculations (only paid)
+        if (curr.is_paid) {
+          if (curr.type === 'income') allTimeInc += curr.amount;
+          else allTimeExp += curr.amount;
+          
+          // Monthly calculations (only paid)
+          const txDate = new Date(curr.paid_at || curr.created_at);
+          if (txDate.getMonth() === currentMonth && txDate.getFullYear() === currentYear) {
+            if (curr.type === 'income') currentMonthInc += curr.amount;
+            else currentMonthExp += curr.amount;
+          }
         }
       });
       
@@ -100,7 +100,7 @@ export default function Home() {
       
       data.forEach(t => {
         const txMonth = new Date(t.created_at).getMonth();
-        if (txMonth === currentMonth) {
+        if (txMonth === currentMonth && t.is_paid) {
           const catName = t.categories?.name || 'General';
           const catPayload = {
             name: catName,

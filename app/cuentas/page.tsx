@@ -81,7 +81,10 @@ export default function CuentasPage() {
       return;
     }
 
-    if (!error && data) {
+    if (error) {
+      console.error(error);
+      setAlertMessage(`Error cargando cuentas: ${error.message || JSON.stringify(error)}`);
+    } else if (data) {
       setTransactions(data as unknown as Transaction[]);
     }
     setLoading(false);
