@@ -23,6 +23,7 @@ export const viewport: Viewport = {
 };
 
 import ClientLayout from "./components/ClientLayout";
+import { UserProvider } from "./context/UserContext";
 
 export default function RootLayout({
   children,
@@ -32,7 +33,9 @@ export default function RootLayout({
   return (
     <html lang="es" className={inter.className} suppressHydrationWarning>
       <body>
-        <ClientLayout>{children}</ClientLayout>
+        <UserProvider>
+          <ClientLayout>{children}</ClientLayout>
+        </UserProvider>
       </body>
     </html>
   );

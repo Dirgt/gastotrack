@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
-import { getUserName, getUserBadgeColor } from "../../lib/couple";
+import { useUserContext } from "../context/UserContext";
 import styles from "./page.module.css";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
@@ -30,6 +30,7 @@ interface Transaction {
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const { getProfile } = useUserContext();
 
   const fetchTransactions = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -49,6 +50,7 @@ export default function TransactionsPage() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line
     fetchTransactions();
     window.addEventListener("transaction_added", fetchTransactions);
     return () => window.removeEventListener("transaction_added", fetchTransactions);
@@ -93,10 +95,10 @@ export default function TransactionsPage() {
                         marginLeft: '0.3rem',
                         padding: '0.1rem 0.35rem',
                         borderRadius: '4px',
-                        backgroundColor: getUserBadgeColor(t.paid_by).bg,
-                        color: getUserBadgeColor(t.paid_by).text
+                        backgroundColor: getProfile(t.paid_by)?.color_bg || 'rgba(107, 114, 128, 0.15)',
+                        color: getProfile(t.paid_by)?.color_text || 'var(--text-muted)'
                       }}>
-                        ✓ Pagó {getUserName(t.paid_by)}
+                        ✓ Pagó {getProfile(t.paid_by)?.display_name || 'Usuario'}
                       </span>
                     )}
                     <span style={{
@@ -105,10 +107,10 @@ export default function TransactionsPage() {
                       marginLeft: '0.4rem',
                       padding: '0.1rem 0.35rem',
                       borderRadius: '4px',
-                      backgroundColor: getUserBadgeColor(t.created_by || t.user_id).bg,
-                      color: getUserBadgeColor(t.created_by || t.user_id).text
+                      backgroundColor: getProfile(t.created_by || t.user_id)?.color_bg || 'rgba(107, 114, 128, 0.15)',
+                      color: getProfile(t.created_by || t.user_id)?.color_text || 'var(--text-muted)'
                     }}>
-                      👤 {getUserName(t.created_by || t.user_id)}
+                      👤 {getProfile(t.created_by || t.user_id)?.display_name || 'Usuario'}
                     </span>
                   </p>
                 </div>

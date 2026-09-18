@@ -8,6 +8,8 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [gender, setGender] = useState("mujer"); // default
   const [isLogin, setIsLogin] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,6 +29,12 @@ export default function Auth() {
         const { error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            data: {
+              first_name: firstName,
+              gender: gender,
+            }
+          }
         });
         if (error) throw error;
         // La sesión se iniciará automáticamente si la confirmación de correo está desactivada.
@@ -47,6 +55,29 @@ export default function Auth() {
         </p>
 
         <form onSubmit={handleAuth} className={styles.form}>
+          {!isLogin && (
+            <>
+              <input
+                className={styles.input}
+                type="text"
+                placeholder="Tu primer nombre (Ej. Juan)"
+                value={firstName}
+                required
+                onChange={(e) => setFirstName(e.target.value)}
+              />
+              <select 
+                className={styles.input} 
+                value={gender} 
+                onChange={(e) => setGender(e.target.value)}
+                style={{ backgroundColor: '#fff', cursor: 'pointer' }}
+              >
+                <option value="mujer">Mujer</option>
+                <option value="hombre">Hombre</option>
+                <option value="otro">Otro</option>
+              </select>
+            </>
+          )}
+
           <input
             className={styles.input}
             type="email"

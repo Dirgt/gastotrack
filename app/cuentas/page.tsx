@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import Link from "next/link";
 import { supabase } from "../../lib/supabase";
-import { getUserName, getUserBadgeColor } from "../../lib/couple";
+import { useUserContext } from "../context/UserContext";
 import styles from "./page.module.css";
 import { ChevronLeft, ChevronRight, Check, ImageIcon, Edit2, Copy, Loader2 } from "lucide-react";
 import PayConfirmModal from "../components/PayConfirmModal";
@@ -17,6 +17,7 @@ interface Transaction {
   description: string | null;
   created_at: string;
   due_date?: string | null;
+  suspension_date?: string | null;
   is_paid: boolean;
   paid_at: string | null;
   receipt_url: string | null;
@@ -41,6 +42,7 @@ interface Transaction {
 export default function CuentasPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const { getProfile } = useUserContext();
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [payModalTx, setPayModalTx] = useState<Transaction | null>(null);
@@ -79,7 +81,7 @@ export default function CuentasPage() {
 
     const { data, error } = await supabase
       .from('transactions')
-      .select('id, amount, type, description, created_at, due_date, is_paid, paid_at, receipt_url, is_installment, installment_current, installment_total, user_id, created_by, updated_by, paid_by, categories(name, icon, parent:parent_id(name, icon))')
+      .select('id, amount, type, description, created_at, due_date, suspension_date, is_paid, paid_at, receipt_url, is_installment, installment_current, installment_total, user_id, created_by, updated_by, paid_by, categories(name, icon, parent:parent_id(name, icon))')
       .gte('due_date', startStr)
       .lte('due_date', endStr)
       .order('due_date', { ascending: true })
@@ -493,7 +495,12 @@ export default function CuentasPage() {
                               <span style={{ fontWeight: 700, color: '#f59e0b' }}>
                                 📅 Vence: {formatDate(tx.due_date || tx.created_at)}
                               </span>
-                              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: '0.4rem' }}>
+                              {tx.suspension_date && (
+                                <span style={{ fontWeight: 700, color: '#ef4444', marginLeft: '0.4rem', borderLeft: '1px solid var(--border-color)', paddingLeft: '0.4rem' }}>
+                                  ✂️ Corte: {formatDate(tx.suspension_date)}
+                                </span>
+                              )}
+                              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: '0.4rem', borderLeft: tx.suspension_date ? 'none' : '1px solid var(--border-color)', paddingLeft: tx.suspension_date ? '0' : '0.4rem' }}>
                                 · Creado {formatDate(tx.created_at)}
                               </span>
                               <span style={{
@@ -502,14 +509,14 @@ export default function CuentasPage() {
                                 marginLeft: '0.4rem',
                                 padding: '0.1rem 0.35rem',
                                 borderRadius: '4px',
-                                backgroundColor: getUserBadgeColor(tx.created_by || tx.user_id).bg,
-                                color: getUserBadgeColor(tx.created_by || tx.user_id).text
+                                backgroundColor: getProfile(tx.created_by || tx.user_id)?.color_bg || 'rgba(107, 114, 128, 0.15)',
+                                color: getProfile(tx.created_by || tx.user_id)?.color_text || 'var(--text-muted)'
                               }}>
-                                👤 {getUserName(tx.created_by || tx.user_id)}
+                                👤 {getProfile(tx.created_by || tx.user_id)?.display_name || 'Usuario'}
                               </span>
                               {tx.updated_by && (
                                 <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginLeft: '0.3rem' }}>
-                                  (editado por {getUserName(tx.updated_by)})
+                                  (editado por {getProfile(tx.updated_by)?.display_name || 'Usuario'})
                                 </span>
                               )}
                             </div>
@@ -569,10 +576,10 @@ export default function CuentasPage() {
                                   marginLeft: '0.4rem',
                                   padding: '0.1rem 0.35rem',
                                   borderRadius: '4px',
-                                  backgroundColor: getUserBadgeColor(tx.paid_by).bg,
-                                  color: getUserBadgeColor(tx.paid_by).text
+                                  backgroundColor: getProfile(tx.paid_by)?.color_bg || 'rgba(107, 114, 128, 0.15)',
+                                  color: getProfile(tx.paid_by)?.color_text || 'var(--text-muted)'
                                 }}>
-                                  ✓ Pagó {getUserName(tx.paid_by)}
+                                  ✓ Pagó {getProfile(tx.paid_by)?.display_name || 'Usuario'}
                                 </span>
                               ) : (
                                 <span style={{
@@ -581,10 +588,10 @@ export default function CuentasPage() {
                                   marginLeft: '0.4rem',
                                   padding: '0.1rem 0.35rem',
                                   borderRadius: '4px',
-                                  backgroundColor: getUserBadgeColor(tx.created_by || tx.user_id).bg,
-                                  color: getUserBadgeColor(tx.created_by || tx.user_id).text
+                                  backgroundColor: getProfile(tx.created_by || tx.user_id)?.color_bg || 'rgba(107, 114, 128, 0.15)',
+                                  color: getProfile(tx.created_by || tx.user_id)?.color_text || 'var(--text-muted)'
                                 }}>
-                                  👤 {getUserName(tx.created_by || tx.user_id)}
+                                  👤 {getProfile(tx.created_by || tx.user_id)?.display_name || 'Usuario'}
                                 </span>
                               )}
                               <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: '0.4rem' }}>
@@ -652,10 +659,10 @@ export default function CuentasPage() {
                             marginLeft: '0.4rem',
                             padding: '0.1rem 0.35rem',
                             borderRadius: '4px',
-                            backgroundColor: getUserBadgeColor(tx.created_by || tx.user_id).bg,
-                            color: getUserBadgeColor(tx.created_by || tx.user_id).text
+                            backgroundColor: getProfile(tx.created_by || tx.user_id)?.color_bg || 'rgba(107, 114, 128, 0.15)',
+                            color: getProfile(tx.created_by || tx.user_id)?.color_text || 'var(--text-muted)'
                           }}>
-                            👤 {getUserName(tx.created_by || tx.user_id)}
+                            👤 {getProfile(tx.created_by || tx.user_id)?.display_name || 'Usuario'}
                           </span>
                         </div>
                       </div>

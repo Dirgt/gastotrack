@@ -54,11 +54,15 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     router.push('/');
   };
 
+  const pathname = usePathname();
+
   if (loading) {
     return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: 'var(--text-muted)' }}>Cargando Gastotrack...</div>;
   }
 
-  if (!session) {
+  const isAdminRoute = pathname === '/admin-parejas-secreto';
+
+  if (!session && !isAdminRoute) {
     return <Auth />;
   }
 
@@ -66,11 +70,11 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     <>
       {children}
       
-      {/* Navegación Inferior Flotante Global */}
-      <BottomNav onAddClick={() => setShowForm(true)} />
+      {/* Navegación Inferior Flotante Global (ocultar en admin) */}
+      {!isAdminRoute && <BottomNav onAddClick={() => setShowForm(true)} />}
 
       {/* Formulario tipo Numpad Pantalla Completa Global */}
-      {showForm && (
+      {showForm && !isAdminRoute && (
         <NumpadForm 
           onClose={() => setShowForm(false)} 
           onAdded={handleTransactionAdded} 

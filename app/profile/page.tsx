@@ -5,10 +5,13 @@ import { supabase } from "../../lib/supabase";
 import styles from "./page.module.css";
 import { ChevronLeft, LogOut, Fingerprint, Moon, Sun, Globe } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function Profile() {
   const [userName, setUserName] = useState("Usuario");
   const [email, setEmail] = useState("");
+
+  const router = useRouter();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -23,7 +26,7 @@ export default function Profile() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    window.location.href = "/";
+    router.push("/");
   };
 
   return (

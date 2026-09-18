@@ -22,6 +22,7 @@ export default function NumpadForm({ onClose, onAdded }: { onClose: () => void, 
   const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [suspensionDate, setSuspensionDate] = useState("");
   
   // Installment states
   const [isInstallment, setIsInstallment] = useState(false);
@@ -137,6 +138,10 @@ export default function NumpadForm({ onClose, onAdded }: { onClose: () => void, 
       const transactionsToInsert = [];
       
       const nowIso = new Date().toISOString();
+      const selectedCat = userCategories.find(c => c.id === selectedCategoryId);
+      const parentCat = userCategories.find(c => c.id === selectedCat?.parent_id);
+      const isServiceCategory = selectedCat?.name === 'Servicios' || parentCat?.name === 'Servicios';
+      const finalSuspensionDate = (isServiceCategory && suspensionDate) ? suspensionDate : null;
 
       if (type === 'expense' && isInstallment) {
         const curr = parseInt(installmentCurrent);
@@ -169,7 +174,8 @@ export default function NumpadForm({ onClose, onAdded }: { onClose: () => void, 
             installment_total: total,
             is_paid: isAlreadyPaid,
             paid_at: isAlreadyPaid ? dueDateObj.toISOString() : null,
-            paid_by: isAlreadyPaid ? user.id : null
+            paid_by: isAlreadyPaid ? user.id : null,
+            suspension_date: finalSuspensionDate
           });
         }
       } else {
@@ -184,7 +190,8 @@ export default function NumpadForm({ onClose, onAdded }: { onClose: () => void, 
           due_date: date,
           is_paid: type === 'income' ? true : isPaid,
           paid_at: (type === 'income' || isPaid) ? nowIso : null,
-          paid_by: (type === 'income' || isPaid) ? user.id : null
+          paid_by: (type === 'income' || isPaid) ? user.id : null,
+          suspension_date: finalSuspensionDate
         });
       }
 
@@ -373,6 +380,29 @@ export default function NumpadForm({ onClose, onAdded }: { onClose: () => void, 
             style={{ width: '100%', padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '0.95rem', background: 'var(--bg-color)', color: 'var(--text-color)' }}
           />
         </div>
+
+        {(() => {
+          const selectedCat = userCategories.find(c => c.id === selectedCategoryId);
+          const parentCat = userCategories.find(c => c.id === selectedCat?.parent_id);
+          const isServiceCategory = selectedCat?.name === 'Servicios' || parentCat?.name === 'Servicios';
+
+          if (type === 'expense' && isServiceCategory) {
+            return (
+              <div style={{ width: '100%', marginBottom: '1rem', background: 'rgba(239, 68, 68, 0.05)', padding: '0.8rem 1rem', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                <label style={{ fontSize: '0.8rem', color: 'var(--danger-color)', display: 'block', marginBottom: '0.35rem', fontWeight: 600 }}>
+                  ✂️ Fecha de Suspensión (Corte del servicio)
+                </label>
+                <input 
+                  type="date" 
+                  value={suspensionDate} 
+                  onChange={(e) => setSuspensionDate(e.target.value)} 
+                  style={{ width: '100%', padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.3)', fontSize: '0.95rem', background: 'var(--bg-color)', color: 'var(--text-color)' }}
+                />
+              </div>
+            );
+          }
+          return null;
+        })()}
 
         {type === 'expense' && (
           <div style={{ width: '100%', marginBottom: '1rem', background: 'var(--surface-color)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--border-color)' }}>

@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { supabase } from "../lib/supabase";
-import { getUserName, getUserBadgeColor } from "../lib/couple";
+import { useUserContext } from "./context/UserContext";
 import styles from "./page.module.css";
 import { UserCircle2, Bell, EyeOff, Plus, Target, History, PieChart } from "lucide-react";
 
@@ -13,7 +13,8 @@ export default function Home() {
   const [income, setIncome] = useState(0);
   const [expense, setExpense] = useState(0);
   const [loadingData, setLoadingData] = useState(true);
-  const [userName, setUserName] = useState("Usuario");
+  const { currentUserProfile, getProfile, loadingProfile } = useUserContext();
+  const userName = currentUserProfile?.display_name || "Usuario";
   const [topExpenseCategories, setTopExpenseCategories] = useState<{name: string, icon: string, color: string, total: number}[]>([]);
   const [topIncomeCategories, setTopIncomeCategories] = useState<{name: string, icon: string, color: string, total: number}[]>([]);
   const [topMode, setTopMode] = useState<'expense' | 'income'>('expense');
@@ -24,21 +25,24 @@ export default function Home() {
     setLoadingData(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    
-    setUserName(getUserName(user.id) !== 'Usuario' ? getUserName(user.id) : (user.email?.split('@')[0] || "Usuario"));
+    if (!user) return;
 
     const today = new Date();
     today.setHours(0,0,0,0);
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
+    const in5Days = new Date(today);
+    in5Days.setDate(today.getDate() + 5);
+    const in5DaysStr = `${in5Days.getFullYear()}-${String(in5Days.getMonth() + 1).padStart(2, '0')}-${String(in5Days.getDate()).padStart(2, '0')}`;
+
     // Ejecutar todas las peticiones a la base de datos EN PARALELO (Presupuesto Compartido de Pareja)
     const [alertsResult, contributionsResult, txsResult] = await Promise.all([
       supabase
         .from('transactions')
-        .select('id, amount, description, created_at, due_date, categories(name)')
+        .select('id, amount, description, created_at, due_date, suspension_date, categories(name, parent_id)')
         .eq('type', 'expense')
         .eq('is_paid', false)
-        .lt('due_date', todayStr),
+        .lte('due_date', in5DaysStr),
       
       supabase
         .from('goal_contributions')
@@ -50,9 +54,83 @@ export default function Home() {
         .order('created_at', { ascending: false })
     ]);
 
+  const formatDate = (dateStr: string | null | undefined) => {
+    if (!dateStr) return '';
+    if (dateStr.includes('T')) {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
+    }
+    const [y, m, d] = dateStr.split('-');
+    if (y && m && d) {
+      const dateObj = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+      return dateObj.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
+    }
+    return dateStr;
+  };
+
+  const processAlerts = (data: any[], today: Date) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return data.map((alert: any) => {
+      let level = 'normal';
+      let title = '';
+      let message = '';
+      let color = '';
+
+      const dueDate = new Date(alert.due_date || alert.created_at);
+      dueDate.setHours(0,0,0,0);
+      
+      const hasSuspension = !!alert.suspension_date;
+      
+      if (hasSuspension) {
+         const suspDate = new Date(alert.suspension_date);
+         suspDate.setHours(0,0,0,0);
+         
+         if (today > suspDate) {
+           level = 'critical';
+           title = '¡Servicio Suspendido!';
+           message = 'Pasó la fecha de corte.';
+           color = '#ef4444'; // red
+         } else if (today > dueDate) {
+           level = 'danger';
+           title = '¡Riesgo de Suspensión!';
+           message = `Paga antes del ${formatDate(alert.suspension_date)}.`;
+           color = '#f97316'; // orange
+         } else {
+           level = 'warning';
+           title = 'Próximo a Vencer';
+           const diffTime = dueDate.getTime() - today.getTime();
+           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+           message = `Vence en ${diffDays} día(s).`;
+           color = '#eab308'; // yellow
+         }
+      } else {
+         if (today > dueDate) {
+           level = 'normal';
+           title = 'Pago Atrasado';
+           message = `Venció el ${formatDate(alert.due_date || alert.created_at)}`;
+           color = '#ef4444';
+         } else {
+           level = 'warning';
+           title = 'Próximo a Vencer';
+           const diffTime = dueDate.getTime() - today.getTime();
+           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+           message = `Vence en ${diffDays} día(s).`;
+           color = '#eab308';
+         }
+      }
+
+      return { ...alert, ui: { level, title, message, color } };
+    }).sort((a, b) => {
+      // Sort critical/danger first
+      const valA = a.ui.level === 'critical' ? 4 : a.ui.level === 'danger' ? 3 : a.ui.level === 'normal' ? 2 : 1;
+      const valB = b.ui.level === 'critical' ? 4 : b.ui.level === 'danger' ? 3 : b.ui.level === 'normal' ? 2 : 1;
+      return valB - valA;
+    });
+  };
+
     // Asignar los resultados
     if (alertsResult.data) {
-      setPendingAlerts(alertsResult.data);
+      setPendingAlerts(processAlerts(alertsResult.data, today));
     }
 
     const totalGoalsContributions = contributionsResult.data?.reduce((acc, curr) => acc + curr.amount, 0) || 0;
@@ -125,6 +203,7 @@ export default function Home() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line
     fetchTransactions();
     
     // Escuchar cuando se agrega un nuevo movimiento desde ClientLayout
@@ -187,11 +266,12 @@ export default function Home() {
                   ) : (
                     <ul className={styles.notifList}>
                       {pendingAlerts.map(alert => (
-                        <li key={alert.id} className={styles.notifItem}>
-                          <span className={styles.notifDotBg}></span>
+                        <li key={alert.id} className={styles.notifItem} style={{ borderLeft: `4px solid ${alert.ui?.color || '#ef4444'}`, paddingLeft: '0.8rem' }}>
                           <div>
-                            <p className={styles.notifText}>Pago atrasado: <strong>{alert.categories?.name}</strong></p>
-                            <p className={styles.notifDate}>Venció el {formatDate(alert.due_date || alert.created_at)}</p>
+                            <p className={styles.notifText} style={{ color: alert.ui?.color || '#ef4444' }}>
+                              {alert.ui?.title}: <strong>{alert.categories?.name}</strong>
+                            </p>
+                            <p className={styles.notifDate}>{alert.ui?.message}</p>
                           </div>
                         </li>
                       ))}
@@ -336,10 +416,10 @@ export default function Home() {
                           marginLeft: '0.4rem', 
                           padding: '0.1rem 0.35rem', 
                           borderRadius: '4px', 
-                          backgroundColor: getUserBadgeColor(t.paid_by || t.created_by || t.user_id).bg, 
-                          color: getUserBadgeColor(t.paid_by || t.created_by || t.user_id).text 
+                          backgroundColor: getProfile(t.paid_by || t.created_by || t.user_id)?.color_bg || 'rgba(107, 114, 128, 0.15)', 
+                          color: getProfile(t.paid_by || t.created_by || t.user_id)?.color_text || 'var(--text-muted)'
                         }}>
-                          👤 {getUserName(t.paid_by || t.created_by || t.user_id)}
+                          👤 {getProfile(t.paid_by || t.created_by || t.user_id)?.display_name || 'Usuario'}
                         </span>
                       </p>
                       {t.description && <p className={styles.transactionDesc}>{t.description}</p>}
